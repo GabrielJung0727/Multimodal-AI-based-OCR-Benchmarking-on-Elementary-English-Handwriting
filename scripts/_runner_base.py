@@ -95,6 +95,8 @@ def run_inference(
     prompt_version: str,
     infer_fn,
     max_images: Optional[int] = None,
+    retries: int = 3,
+    backoff_seconds: float = 2.0,
 ) -> None:
     rows = load_manifest(manifest_path)
     existing_ids = read_existing_ids(output_path)
@@ -120,14 +122,22 @@ def run_inference(
         parsed_conf = None
         cost_estimate = None
         raw_response = None
-        try:
-            response = infer_fn(row)
-            raw_response = response.get("raw_response")
-            parsed_text = response.get("parsed_text", "")
-            parsed_conf = response.get("parsed_confidence")
-            cost_estimate = response.get("cost_estimate")
-        except Exception as exc:  # noqa: BLE001
-            error = str(exc)
+        for attempt in range(1, retries + 1):
+            try:
+                response = infer_fn(row)
+                raw_response = response.get("raw_response")
+                parsed_text = response.get("parsed_text", "")
+                parsed_conf = response.get("parsed_confidence")
+                cost_estimate = response.get("cost_estimate")
+                error = None
+                break
+            except Exception as exc:  # noqa: BLE001
+                error = f"Attempt {attempt}/{retries} failed: {exc}"
+                if attempt < retries:
+                    time.sleep(backoff_seconds * attempt)
+                else:
+                    # final attempt failed; will record error
+                    pass
 
         latency_ms = int((time.time() - start) * 1000)
         record = normalize_record(

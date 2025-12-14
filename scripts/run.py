@@ -24,6 +24,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--prompt-version", default=PROMPT_VERSION, help="Prompt version tag to record.")
     parser.add_argument("--max-images", type=int, default=None, help="Limit number of images to process.")
     parser.add_argument("--config", default="configs/providers.yaml", help="Provider config YAML.")
+    parser.add_argument("--retries", type=int, default=3, help="Retries per image on failure.")
+    parser.add_argument("--backoff-seconds", type=float, default=2.0, help="Backoff base seconds between retries.")
     return parser.parse_args()
 
 
@@ -54,6 +56,8 @@ def main() -> None:
         prompt_version=args.prompt_version,
         infer_fn=infer_fn,
         max_images=args.max_images,
+        retries=args.retries,
+        backoff_seconds=args.backoff_seconds,
     )
 
 

@@ -28,7 +28,7 @@ class OpenAIProvider(VisionProvider):
 
         model_name = self.model or "gpt-4o"
         b64 = _read_image_b64(image_path)
-        client = OpenAI(api_key=self.api_key)
+        client = OpenAI(api_key=self.api_key, timeout=60)
 
         messages = [
             {"role": "system", "content": prompt},
