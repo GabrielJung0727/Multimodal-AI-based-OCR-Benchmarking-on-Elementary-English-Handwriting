@@ -40,7 +40,7 @@ def build_config(provider_name: str, data: Dict) -> ProviderConfig:
     entry = data[provider_name]
     return ProviderConfig(
         name=provider_name,
-        env_key=entry.get("env_key"),
+        env_key=entry.get("env_key") if entry.get("env_key") not in ("", None) else None,
         endpoint=entry.get("endpoint"),
         default_model=entry.get("default_model"),
         extras=entry.get("extras") or {},

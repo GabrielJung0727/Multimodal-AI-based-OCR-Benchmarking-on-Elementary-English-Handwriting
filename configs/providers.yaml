@@ -18,12 +18,16 @@ claude:
 
 llava:
   class: LlavaProvider
-  env_key: HF_HOME
+  env_key: null
   endpoint: local
-  default_model: llava
+  default_model: llava-hf/llava-1.5-7b-hf
+  extras:
+    device: auto
 
 qwen_vl:
   class: QwenVLProvider
-  env_key: HF_HOME
+  env_key: null
   endpoint: local
-  default_model: qwen-vl
+  default_model: Qwen/Qwen-VL-Chat
+  extras:
+    device: auto
