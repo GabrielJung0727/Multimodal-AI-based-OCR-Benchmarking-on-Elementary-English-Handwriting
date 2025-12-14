@@ -28,6 +28,15 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    # Load .env if present to populate API keys without manual export.
+    try:
+        from dotenv import load_dotenv  # type: ignore
+
+        load_dotenv(dotenv_path=Path(".env"), override=False)
+    except ModuleNotFoundError:
+        # Optional dependency; if missing, user must export env vars manually.
+        pass
+
     args = parse_args()
     provider = create_provider(args.provider, args.model, config_path=Path(args.config))
 

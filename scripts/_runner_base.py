@@ -99,8 +99,15 @@ def run_inference(
     rows = load_manifest(manifest_path)
     existing_ids = read_existing_ids(output_path)
 
+    try:
+        from tqdm import tqdm  # type: ignore
+
+        iterator = tqdm(rows, desc=f"Running {provider_name}", unit="img")
+    except ModuleNotFoundError:
+        iterator = rows
+
     processed = 0
-    for row in rows:
+    for row in iterator:
         if max_images and processed >= max_images:
             break
         image_id = row.get("image_id")
