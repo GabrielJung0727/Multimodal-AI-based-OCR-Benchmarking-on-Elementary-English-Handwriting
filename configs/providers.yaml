@@ -1,0 +1,29 @@
+gpt:
+  class: OpenAIProvider
+  env_key: OPENAI_API_KEY
+  endpoint: https://api.openai.com/v1/chat/completions
+  default_model: gpt-4o
+
+gemini:
+  class: GeminiProvider
+  env_key: GOOGLE_API_KEY
+  endpoint: https://generativelanguage.googleapis.com/v1beta/models
+  default_model: gemini-1.5-pro
+
+claude:
+  class: AnthropicProvider
+  env_key: ANTHROPIC_API_KEY
+  endpoint: https://api.anthropic.com/v1/messages
+  default_model: claude-3-5-sonnet-20240620
+
+llava:
+  class: LlavaProvider
+  env_key: HF_HOME
+  endpoint: local
+  default_model: llava
+
+qwen_vl:
+  class: QwenVLProvider
+  env_key: HF_HOME
+  endpoint: local
+  default_model: qwen-vl

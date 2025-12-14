@@ -76,28 +76,37 @@ Python, OpenCV/PIL, Gemini/GPT/Claude APIs, LLaVA/Qwen-VL (HuggingFace), PyTorch
 │  ├─ ai_judgements/
 │  └─ graphs/
 ├─ scripts/
-│  ├─ run_gemini.py
-│  ├─ run_gpt.py
-│  ├─ run_claude.py
-│  ├─ run_llava.py
-│  ├─ run_qwen_vl.py
-│  ├─ evaluate.py
+│  ├─ run.py
 │  ├─ build_manifest.py
-│  └─ visualize.py
+│  ├─ evaluate.py
+│  ├─ visualize.py
+│  ├─ provider_factory.py
+│  ├─ prompts.py
+│  ├─ _runner_base.py
+│  └─ providers/
+│     ├─ base.py
+│     ├─ openai.py
+│     ├─ gemini.py
+│     ├─ anthropic.py
+│     ├─ llava.py
+│     ├─ qwen_vl.py
+│     └─ __init__.py
+├─ configs/
+│  └─ providers.yaml
 └─ README.md
 ```
 
-## How to run (v0 scaffolding)
+## How to run (unified runner)
 ```bash
 # 1) build manifest
 python scripts/build_manifest.py --data-root data --output data/manifest.csv
 
-# 2) model runs (use --mock for dry-run without API calls)
-python scripts/run_gemini.py --manifest data/manifest.csv --mock
-python scripts/run_gpt.py --manifest data/manifest.csv --mock
-python scripts/run_claude.py --manifest data/manifest.csv --mock
-python scripts/run_llava.py --manifest data/manifest.csv --mock
-python scripts/run_qwen_vl.py --manifest data/manifest.csv --mock
+# 2) model runs (pick provider/model; config in configs/providers.yaml)
+python scripts/run.py --provider gpt --model gpt-4o --manifest data/manifest.csv --out outputs/ai_judgements/gpt.jsonl
+python scripts/run.py --provider gemini --model gemini-1.5-pro --manifest data/manifest.csv --out outputs/ai_judgements/gemini.jsonl
+python scripts/run.py --provider claude --model claude-3-5-sonnet --manifest data/manifest.csv --out outputs/ai_judgements/claude.jsonl
+python scripts/run.py --provider llava --model llava --manifest data/manifest.csv --out outputs/ai_judgements/llava.jsonl
+python scripts/run.py --provider qwen_vl --model qwen-vl --manifest data/manifest.csv --out outputs/ai_judgements/qwen_vl.jsonl
 
 # 3) evaluate / visualize (to be implemented)
 python scripts/evaluate.py

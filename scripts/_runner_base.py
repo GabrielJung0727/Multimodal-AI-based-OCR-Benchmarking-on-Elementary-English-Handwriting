@@ -4,7 +4,7 @@ Provides:
 - Manifest loading
 - Existing-result skip
 - Safe JSONL append
-- Mock inference for dry runs
+- Output schema normalization
 """
 
 from __future__ import annotations
@@ -12,14 +12,12 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import os
-import random
 import time
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Dict, Iterable, List, Optional
+from typing import Dict, List, Optional
 
-Result = Dict[str, object]
-InferFn = Callable[[Dict[str, str]], Result]
+Record = Dict[str, object]
 
 
 def load_manifest(path: Path) -> List[Dict[str, str]]:
@@ -46,8 +44,8 @@ def read_existing_ids(output_path: Path) -> set:
                 continue
             try:
                 obj = json.loads(line)
-                if "image_id" in obj:
-                    ids.add(obj["image_id"])
+                if "id" in obj:
+                    ids.add(obj["id"])
             except json.JSONDecodeError:
                 continue
     return ids
@@ -59,33 +57,44 @@ def append_jsonl(path: Path, record: Dict[str, object]) -> None:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
-def mock_infer(row: Dict[str, str], model: str, prompt_version: str) -> Result:
-    # Lightweight mock to allow dry runs without API calls.
-    dummy_text = f"Dummy OCR for {row.get('image_id', '')}"
+def normalize_record(
+    *,
+    row: Dict[str, str],
+    provider: str,
+    model: str,
+    prompt_version: str,
+    raw_response: object,
+    parsed_text: str,
+    parsed_confidence: Optional[float],
+    latency_ms: int,
+    cost_estimate: Optional[float],
+    error: Optional[str],
+) -> Record:
     return {
-        "image_id": row.get("image_id"),
+        "id": row.get("image_id"),
+        "image_path": row.get("image_path"),
         "dataset": row.get("dataset"),
+        "provider": provider,
         "model": model,
         "prompt_version": prompt_version,
-        "ocr_text": dummy_text,
-        "judgement": {
-            "predicted_correct": random.choice([True, False]),
-            "confidence": round(random.uniform(0.2, 0.95), 2),
-            "reason_short": "mock response",
-        },
-        "latency_ms": random.randint(50, 150),
-        "error": None,
+        "raw_response": raw_response,
+        "parsed": {"text": parsed_text, "confidence": parsed_confidence},
+        "latency_ms": latency_ms,
+        "cost_estimate": cost_estimate,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "error": error,
     }
 
 
 def run_inference(
+    *,
     manifest_path: Path,
     output_path: Path,
+    provider_name: str,
     model_name: str,
     prompt_version: str,
-    infer_fn: InferFn,
+    infer_fn,
     max_images: Optional[int] = None,
-    mock: bool = False,
 ) -> None:
     rows = load_manifest(manifest_path)
     existing_ids = read_existing_ids(output_path)
@@ -99,31 +108,34 @@ def run_inference(
             continue
 
         start = time.time()
+        error = None
+        parsed_text = ""
+        parsed_conf = None
+        cost_estimate = None
+        raw_response = None
         try:
-            result = mock_infer(row, model_name, prompt_version) if mock else infer_fn(row)
-            result.setdefault("image_id", image_id)
-            result.setdefault("dataset", row.get("dataset"))
-            result.setdefault("model", model_name)
-            result.setdefault("prompt_version", prompt_version)
-            result.setdefault("latency_ms", int((time.time() - start) * 1000))
-            result.setdefault("error", None)
+            response = infer_fn(row)
+            raw_response = response.get("raw_response")
+            parsed_text = response.get("parsed_text", "")
+            parsed_conf = response.get("parsed_confidence")
+            cost_estimate = response.get("cost_estimate")
         except Exception as exc:  # noqa: BLE001
-            result = {
-                "image_id": image_id,
-                "dataset": row.get("dataset"),
-                "model": model_name,
-                "prompt_version": prompt_version,
-                "ocr_text": "",
-                "judgement": {
-                    "predicted_correct": False,
-                    "confidence": 0.0,
-                    "reason_short": "error",
-                },
-                "latency_ms": int((time.time() - start) * 1000),
-                "error": str(exc),
-            }
+            error = str(exc)
 
-        append_jsonl(output_path, result)
+        latency_ms = int((time.time() - start) * 1000)
+        record = normalize_record(
+            row=row,
+            provider=provider_name,
+            model=model_name,
+            prompt_version=prompt_version,
+            raw_response=raw_response,
+            parsed_text=parsed_text,
+            parsed_confidence=parsed_conf,
+            latency_ms=latency_ms,
+            cost_estimate=cost_estimate,
+            error=error,
+        )
+        append_jsonl(output_path, record)
         processed += 1
 
 
@@ -132,5 +144,4 @@ def common_arg_parser(default_model: str) -> argparse.ArgumentParser:
     parser.add_argument("--manifest", type=str, default="data/manifest.csv", help="Path to manifest csv/jsonl.")
     parser.add_argument("--output", type=str, help="Output JSONL path.")
     parser.add_argument("--max-images", type=int, default=None, help="Limit number of images.")
-    parser.add_argument("--mock", action="store_true", help="Use mock inference (no API calls).")
     return parser
