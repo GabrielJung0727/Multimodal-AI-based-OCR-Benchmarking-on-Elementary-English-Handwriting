@@ -1,0 +1,35 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# Build / dist
+build/
+dist/
+*.egg-info/
+
+# Tooling / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Logs / temp
+*.log
+*.tmp
+*.bak
+
+# Project outputs
+outputs/
+
+# Datasets (large, keep local)
+data/
