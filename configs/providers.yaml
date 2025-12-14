@@ -8,7 +8,7 @@ gemini:
   class: GeminiProvider
   env_key: GOOGLE_API_KEY
   endpoint: https://generativelanguage.googleapis.com/v1beta/models
-  default_model: gemini-1.5-pro
+  default_model: models/gemini-2.5-flash
 
 claude:
   class: AnthropicProvider
